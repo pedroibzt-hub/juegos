@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruta 2030: El Gran Juego de Mesa de los ODS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top, #132a4a 0%, #091326 100%);
+            color: #f8fafc;
+            user-select: none;
+            overflow-x: hidden;
+        }
+        h1, h2, h3, h4, .font-board {
+            font-family: 'Fredoka', sans-serif;
+        }
+        .board-panel {
+            background: rgba(15, 23, 42, 0.88);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+        }
+        .card-surface {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border: 2px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.7);
+        }
+        .btn-toy {
+            transition: all 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 5px 0 rgba(0, 0, 0, 0.35);
+        }
+        .btn-toy:hover:not(:disabled) {
+            transform: translateY(-2px) scale(1.02);
+            filter: brightness(1.06);
+        }
+        .btn-toy:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+        }
+        .btn-toy:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        @keyframes diceShake {
+            0% { transform: rotate(0deg) scale(1); }
+            20% { transform: rotate(-18deg) scale(1.12); }
+            40% { transform: rotate(18deg) scale(1.15); }
+            60% { transform: rotate(-14deg) scale(1.1); }
+            80% { transform: rotate(12deg) scale(1.05); }
+            100% { transform: rotate(0deg) scale(1); }
+        }
+        .dice-rolling {
+            animation: diceShake 0.45s ease-in-out infinite;
+        }
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-float {
+            animation: floatSlow 2.8s ease-in-out infinite;
+        }
+        #board-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-2 sm:p-4">
+
+    <!-- ===================================================================== -->
+    <!-- 1. PANTALLA DE CONFIGURACIÓN Y SELECCIÓN DE PERSONAJES                 -->
+    <!-- ===================================================================== -->
+    <div id="setup-screen" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/92 backdrop-blur-md overflow-y-auto">
+        <div class="card-surface w-full max-w-4xl rounded-3xl p-5 sm:p-8 my-auto">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold uppercase tracking-wider mb-2">
+                    <span>🎲 Juego de Mesa Estratégico & Cooperativo</span>
+                </div>
+                <h1 class="text-3xl sm:text-5xl font-bold text-white tracking-tight">
+                    Ruta 2030: <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-emerald-400 to-sky-400">Guardianes del Tablero</span>
+                </h1>
+                <p class="text-slate-300 text-xs sm:text-sm max-w-2xl mx-auto mt-2">
+                    Tira los dados, recorre la isla, construye proyectos sostenibles, supera dilemas narrativos y eleva la <strong>Salud del Planeta al 100%</strong>. ¡Quien más Eco-Puntos y alianzas sume al restaurar el mundo gana!
+                </p>
+            </div>
+
+            <!-- Selector de Jugadores / Bots -->
+            <div class="mb-6">
+                <h2 class="font-board text-lg font-bold text-amber-300 mb-3 flex items-center gap-2">
+                    <span>👥 Configura los Jugadores (2 a 4 participantes)</span>
+                </h2>
+                <div id="character-cards-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <!-- Se genera por JS -->
+                </div>
+            </div>
+
+            <!-- Reglas rápidas en iconos -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-6 text-xs">
+                <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-700/80 flex items-center gap-3">
+                    <span class="text-2xl">🏗️</span>
+                    <div>
+                        <strong class="text-emerald-300 block">Construye en el Tablero</strong>
+                        <span class="text-slate-400">Levanta parques solares, bosques y escuelas. ¡Protegen de crisis!</span>
+                    </div>
+                </div>
+                <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-700/80 flex items-center gap-3">
+                    <span class="text-2xl">🤝</span>
+                    <div>
+                        <strong class="text-sky-300 block">Alianzas ODS 17</strong>
+                        <span class="text-slate-400">Al caer en la obra de otro jugador, ambos ganan puntos de cooperación.</span>
+                    </div>
+                </div>
+                <div class="bg-slate-900/80 p-3 rounded-2xl border border-slate-700/80 flex items-center gap-3">
+                    <span class="text-2xl">🃏</span>
+                    <div>
+                        <strong class="text-amber-300 block">Cartas de Dilema</strong>
+                        <span class="text-slate-400">Personajes vecinos te plantean decisiones reales con efecto inmediato.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-slate-800">
+                <p id="setup-validation-msg" class="text-xs text-slate-400 font-medium">
+                    Elige qué personajes son Humanos o Bots (mínimo 2 activos).
+                </p>
+                <button id="btn-start-game" onclick="startBoardGame()" class="btn-toy w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-sky-400 text-slate-950 font-board font-bold text-xl cursor-pointer">
+                    🎲 ¡Empezar Partida!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 2. CABECERA SUPERIOR DEL JUEGO                                        -->
+    <!-- ===================================================================== -->
+    <header class="w-full max-w-7xl mx-auto board-panel rounded-2xl px-3 py-2.5 mb-3 flex flex-wrap items-center justify-between gap-3 z-20">
+        <div class="flex items-center gap-2.5">
+            <span class="text-2xl sm:text-3xl">🌍</span>
+            <div>
+                <h1 class="font-board text-base sm:text-xl font-bold text-white leading-none">Ruta 2030</h1>
+                <p id="round-indicator" class="text-[11px] sm:text-xs text-amber-300 font-bold mt-0.5">Ronda 1 • Objetivo: Salud del Planeta 100%</p>
+            </div>
+        </div>
+
+        <!-- Barra Central de Salud del Planeta -->
+        <div class="flex-1 max-w-md mx-2">
+            <div class="flex justify-between text-xs font-extrabold mb-1">
+                <span class="text-emerald-300 flex items-center gap-1">🌱 Salud del Planeta</span>
+                <span id="planet-health-text" class="text-white">20% / 100%</span>
+            </div>
+            <div class="w-full h-3.5 bg-slate-900 rounded-full p-0.5 border border-emerald-500/40 overflow-hidden">
+                <div id="planet-health-bar" class="h-full rounded-full bg-gradient-to-r from-amber-400 via-lime-400 to-emerald-400 transition-all duration-700" style="width: 20%"></div>
+            </div>
+        </div>
+
+        <!-- Botones de Cuaderno ODS y Audio -->
+        <div class="flex items-center gap-2">
+            <button onclick="openNotebook()" class="btn-toy px-3 py-2 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-200 text-xs sm:text-sm font-bold flex items-center gap-1.5 cursor-pointer">
+                <span>📒</span>
+                <span class="hidden sm:inline">Cuaderno ODS</span>
+                <span id="notebook-count" class="px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-extrabold">0</span>
+            </button>
+            <button id="audio-toggle-btn" onclick="toggleSound()" class="btn-toy p-2 rounded-xl bg-slate-800 border border-slate-600 text-sm cursor-pointer" title="Activar/Silenciar sonido">
+                🔊
+            </button>
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- 3. ÁREA PRINCIPAL: TABLERO CENTRAL + PANEL DE JUGADORES Y DADO        -->
+    <!-- ===================================================================== -->
+    <main class="w-full max-w-7xl mx-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
+
+        <!-- COLUMNA IZQUIERDA: FICHAS DE LOS JUGADORES (3 cols en desktop) -->
+        <section class="lg:col-span-3 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0" id="players-sidebar">
+            <!-- Tarjetas de estado de cada jugador -->
+        </section>
+
+        <!-- COLUMNA CENTRAL: TABLERO DE MESA VISUAL (6 cols en desktop) -->
+        <section class="lg:col-span-6 relative min-h-[370px] sm:min-h-[480px] lg:min-h-[540px] board-panel rounded-3xl overflow-hidden flex items-center justify-center p-1">
+            <canvas id="board-canvas"></canvas>
+            <!-- Leyenda flotante compacta -->
+            <div class="absolute bottom-2.5 left-1/2 -translate-x-1/2 bg-slate-950/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 text-[10px] sm:text-[11px] text-slate-300 flex items-center gap-3 whitespace-nowrap">
+                <span>🏗️ Proyecto</span>
+                <span>🃏 Evento</span>
+                <span>⚠️ Crisis</span>
+                <span>🚄 Eco-Tren</span>
+                <span>🤝 Foro ODS 17</span>
+            </div>
+        </section>
+
+        <!-- COLUMNA DERECHA: DADO INTERACTIVO Y BITÁCORA DE PARTIDA (3 cols en desktop) -->
+        <section class="lg:col-span-3 board-panel rounded-3xl p-4 flex flex-col justify-between gap-3">
+            <!-- Turno actual y Dado -->
+            <div class="text-center bg-slate-900/80 rounded-2xl p-4 border border-white/10">
+                <span class="text-[11px] uppercase tracking-wider text-slate-400 font-bold">Turno Actual</span>
+                <div id="turn-player-banner" class="flex items-center justify-center gap-2 mt-1 mb-3">
+                    <span id="turn-avatar" class="text-3xl">👩‍🔧</span>
+                    <div class="text-left">
+                        <h3 id="turn-name" class="font-board text-lg font-bold text-white leading-none">Mara</h3>
+                        <p id="turn-role" class="text-[11px] text-amber-300 font-semibold">Ingeniera Solar</p>
+                    </div>
+                </div>
+
+                <!-- Dado 2D/3D Interactivo -->
+                <div class="flex flex-col items-center justify-center my-2">
+                    <button id="dice-box" onclick="handleRollDiceClick()" class="btn-toy w-24 h-24 rounded-3xl bg-gradient-to-br from-white via-slate-100 to-slate-300 text-slate-900 border-4 border-amber-400 flex items-center justify-center shadow-2xl cursor-pointer relative">
+                        <div id="dice-dots" class="grid grid-cols-3 grid-rows-3 gap-1.5 w-14 h-14 p-1">
+                            <!-- Puntos del dado -->
+                        </div>
+                    </button>
+                    <button id="roll-action-btn" onclick="handleRollDiceClick()" class="btn-toy mt-3 w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-board font-bold text-base cursor-pointer">
+                        🎲 Tirar Dado
+                    </button>
+                </div>
+            </div>
+
+            <!-- Última Acción / Crónica del Tablero -->
+            <div class="flex-1 bg-slate-950/60 rounded-2xl p-3 border border-slate-800 flex flex-col min-h-[130px]">
+                <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+                    <span>📜 Crónica de la Partida</span>
+                </h4>
+                <div id="game-log" class="space-y-1.5 overflow-y-auto max-h-44 text-xs pr-1">
+                    <p class="text-slate-400 italic">¡La partida está lista! Tira el dado para comenzar.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===================================================================== -->
+    <!-- 4. MODAL DE ACCIÓN DE CASILLA (CONSTRUIR / CARTA EVENTO / CRISIS)     -->
+    <!-- ===================================================================== -->
+    <div id="tile-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-5 bg-slate-950/80 backdrop-blur-sm">
+        <div id="tile-modal-card" class="card-surface w-full max-w-xl rounded-3xl overflow-hidden animate-float" style="animation-iteration-count: 1; animation-duration: 0.3s;">
+            <!-- Rellenado dinámicamente según el tipo de casilla -->
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 5. MODAL DEL CUADERNO DE LECCIONES ODS                                -->
+    <!-- ===================================================================== -->
+    <div id="notebook-modal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-3 sm:p-5 bg-slate-950/85 backdrop-blur-sm">
+        <div class="card-surface w-full max-w-3xl rounded-3xl overflow-hidden flex flex-col max-h-[88vh]">
+            <div class="px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-600 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">📒</span>
+                    <div>
+                        <h2 class="font-board text-xl sm:text-2xl font-bold text-slate-950">Cuaderno de Lecciones ODS</h2>
+                        <p class="text-xs text-slate-900 font-semibold">Aprendizajes desbloqueados durante esta partida</p>
+                    </div>
+                </div>
+                <button onclick="closeNotebook()" class="w-9 h-9 rounded-xl bg-black/20 hover:bg-black/30 text-white font-bold cursor-pointer">✕</button>
+            </div>
+            <div id="notebook-body" class="p-5 overflow-y-auto space-y-3">
+                <!-- Tarjetas de lecciones -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 6. PANTALLA FINAL DE PODIO Y PREMIOS ODS                              -->
+    <!-- ===================================================================== -->
+    <div id="podium-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-950/92 backdrop-blur-md overflow-y-auto">
+        <div class="card-surface w-full max-w-3xl rounded-3xl p-6 sm:p-8 text-center my-auto">
+            <div class="text-5xl sm:text-6xl mb-2 animate-float">🏆🌍✨</div>
+            <span class="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-extrabold uppercase">
+                ¡Planeta Restaurado al 100%!
+            </span>
+            <h2 class="font-board text-3xl sm:text-4xl font-bold text-white mt-2 mb-1">¡Victoria Sostenible!</h2>
+            <p class="text-slate-300 text-xs sm:text-sm max-w-xl mx-auto mb-6">
+                Gracias a la cooperación y a los proyectos construidos en el tablero, la isla ha alcanzado el equilibrio ecológico y social de la Agenda 2030.
+            </p>
+
+            <!-- Podio de Jugadores -->
+            <div id="podium-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 text-left">
+                <!-- Se genera dinámicamente -->
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <button onclick="openNotebook()" class="btn-toy px-6 py-3.5 rounded-2xl bg-amber-400 text-slate-950 font-board font-bold text-base cursor-pointer">
+                    📒 Repasar Lecciones Aprendidas
+                </button>
+                <button onclick="location.reload()" class="btn-toy px-6 py-3.5 rounded-2xl bg-emerald-500 text-slate-950 font-board font-bold text-base cursor-pointer">
+                    🎲 Jugar Otra Partida
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // 1. AUDIO SINTETIZADO (WEB AUDIO API - EFECTOS DE JUEGO DE MESA)
+        // =========================================================================
+        const Sound = {
+            ctx: null,
+            muted: false,
+            init() {
+                if (!this.ctx) {
+                    const AC = window.AudioContext || window.webkitAudioContext;
+                    if (AC) this.ctx = new AC();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+            },
+            tone(freq, type = 'sine', dur = 0.12, vol = 0.12, delay = 0) {
+                if (this.muted) return;
+                this.init();
+                if (!this.ctx) return;
+                const o = this.ctx.createOscillator();
+                const g = this.ctx.createGain();
+                o.type = type;
+                o.frequency.setValueAtTime(freq, this.ctx.currentTime + delay);
+                g.gain.setValueAtTime(vol, this.ctx.currentTime + delay);
+                g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + delay + dur);
+                o.connect(g);
+                g.connect(this.ctx.destination);
+                o.start(this.ctx.currentTime + delay);
+                o.stop(this.ctx.currentTime + delay + dur);
+            },
+            diceTick() { this.tone(280 + Math.random() * 240, 'triangle', 0.05, 0.1); },
+            step() { this.tone(420, 'sine', 0.08, 0.12); },
+            build() {
+                this.tone(440, 'triangle', 0.12, 0.14, 0);
+                this.tone(554, 'triangle', 0.12, 0.14, 0.09);
+                this.tone(659, 'triangle', 0.2, 0.16, 0.18);
+            },
+            ally() {
+                this.tone(523, 'sine', 0.12, 0.12, 0);
+                this.tone(784, 'sine', 0.22, 0.14, 0.1);
+            },
+            crisis() {
+                this.tone(210, 'sawtooth', 0.18, 0.11, 0);
+                this.tone(165, 'sawtooth', 0.28, 0.11, 0.15);
+            },
+            fanfare() {
+                [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => this.tone(f, 'triangle', 0.25, 0.15, i * 0.11));
+            }
+        };
+
+        function toggleSound() {
+            Sound.muted = !Sound.muted;
+            document.getElementById('audio-toggle-btn').textContent = Sound.muted ? '🔇' : '🔊';
+        }
+
+        // =========================================================================
+        // 2. DEFINICIÓN DE LOS 4 PERSONAJES JUGABLES Y SUS HABILIDADES ÚNICAS
+        // =========================================================================
+        const CHARACTER_TEMPLATES = [
+            {
+                id: 'mara',
+                name: 'Mara',
+                role: 'Ingeniera Solar',
+                odsTag: 'ODS 7 y 13',
+                avatar: '👩‍🔧',
+                color: '#f59e0b',
+                bgClass: 'border-amber-400 bg-amber-950/40',
+                powerTitle: '⚡ Impulso Renovable',
+                powerDesc: 'Gana +15 Eco-Puntos extra al construir o visitar proyectos de Energía o Clima.',
+                mode: 'human' // 'human' | 'bot' | 'off'
+            },
+            {
+                id: 'leo',
+                name: 'Leo',
+                role: 'Biólogo Marino',
+                odsTag: 'ODS 14 y 15',
+                avatar: '🧔‍♂️',
+                color: '#10b981',
+                bgClass: 'border-emerald-400 bg-emerald-950/40',
+                powerTitle: '🛡️ Escudo Natural',
+                powerDesc: 'Inmune a su primera crisis ambiental y gana +15 Eco-Puntos en proyectos de Agua/Bosque.',
+                mode: 'bot'
+            },
+            {
+                id: 'nora',
+                name: 'Nora',
+                role: 'Activista Social',
+                odsTag: 'ODS 4, 5 y 10',
+                avatar: '👩‍🏫',
+                color: '#f43f5e',
+                bgClass: 'border-rose-400 bg-rose-950/40',
+                powerTitle: '🤝 Red Comunitaria',
+                powerDesc: 'Recibe +15 Eco-Puntos extra en Educación, Igualdad y Alianzas con otros jugadores.',
+                mode: 'bot'
+            },
+            {
+                id: 'tarek',
+                name: 'Tarek',
+                role: 'Innovador Circular',
+                odsTag: 'ODS 11 y 12',
+                avatar: '🧑‍🎨',
+                color: '#38bdf8',
+                bgClass: 'border-sky-400 bg-sky-950/40',
+                powerTitle: '♻️ Ecodiseño Eficiente',
+                powerDesc: 'Construir cualquier proyecto en el tablero le cuesta un 40% menos de Eco-Puntos.',
+                mode: 'bot'
+            }
+        ];
+
+        // Renderizar tarjetas de selección en la pantalla de inicio
+        function renderCharacterSetup() {
+            const grid = document.getElementById('character-cards-grid');
+            grid.innerHTML = CHARACTER_TEMPLATES.map((c, idx) => `
+                <div class="p-4 rounded-2xl border-2 transition-all ${c.mode === 'off' ? 'border-slate-800 bg-slate-900/40 opacity-60' : c.bgClass}">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-4xl">${c.avatar}</span>
+                        <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full text-slate-950" style="background-color:${c.color}">${c.odsTag}</span>
+                    </div>
+                    <h3 class="font-board text-xl font-bold text-white">${c.name}</h3>
+                    <p class="text-xs text-slate-300 font-semibold mb-2">${c.role}</p>
+                    <div class="bg-slate-950/60 p-2.5 rounded-xl border border-white/10 mb-3 min-h-[74px]">
+                        <p class="text-[11px] font-bold text-amber-300">${c.powerTitle}</p>
+                        <p class="text-[11px] text-slate-300 leading-snug mt-0.5">${c.powerDesc}</p>
+                    </div>
+                    <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-xl">
+                        <button onclick="setCharMode(${idx}, 'human')" class="py-1.5 rounded-lg text-[11px] font-bold cursor-pointer ${c.mode === 'human' ? 'bg-emerald-400 text-slate-950' : 'text-slate-400 hover:text-white'}">👤 Tú</button>
+                        <button onclick="setCharMode(${idx}, 'bot')" class="py-1.5 rounded-lg text-[11px] font-bold cursor-pointer ${c.mode === 'bot' ? 'bg-sky-400 text-slate-950' : 'text-slate-400 hover:text-white'}">🤖 Bot</button>
+                        <button onclick="setCharMode(${idx}, 'off')" class="py-1.5 rounded-lg text-[11px] font-bold cursor-pointer ${c.mode === 'off' ? 'bg-rose-500 text-white' : 'text-slate-400 hover:text-white'}">✖ No</button>
+                    </div>
+                </div>
+            `).join('');
+
+            const activeCount = CHARACTER_TEMPLATES.filter(c => c.mode !== 'off').length;
+            const btn = document.getElementById('btn-start-game');
+            const msg = document.getElementById('setup-validation-msg');
+            if (activeCount < 2) {
+                btn.disabled = true;
+                msg.textContent = '⚠️ Activa al menos 2 personajes (Humano o Bot) para jugar.';
+                msg.className = 'text-xs text-rose-400 font-bold';
+            } else {
+                btn.disabled = false;
+                msg.textContent = `✅ ${activeCount} personajes listos para explorar la Ruta 2030.`;
+                msg.className = 'text-xs text-emerald-400 font-bold';
+            }
+        }
+
+        function setCharMode(idx, mode) {
+            Sound.step();
+            CHARACTER_TEMPLATES[idx].mode = mode;
+            renderCharacterSetup();
+        }
+        renderCharacterSetup();
+
+        // =========================================================================
+        // 3. TABLERO DE 24 CASILLAS Y CARTAS DE EVENTOS / DILEMAS
+        // =========================================================================
+        const BOARD_TILES = [
+            { id: 0, type: 'start', name: 'Salida: Día de la Tierra', icon: '🌍', color: '#10b981', desc: 'Cada vez que pasas por aquí recibes +30 Eco-Puntos por tu compromiso global.' },
+            { id: 1, type: 'project', category: 'water', ods: 'ODS 6', name: 'Biofiltro Río Azul', icon: '💧', color: '#0284c7', cost: 40, reward: 25, healthGain: 7, lesson: 'El saneamiento ecológico depura el agua sin químicos y protege la salud de toda la cuenca (ODS 6).' },
+            { id: 2, type: 'event', name: 'Carta de Comunidad', icon: '🃏', color: '#8b5cf6' },
+            { id: 3, type: 'project', category: 'energy', ods: 'ODS 7', name: 'Tejados Solares', icon: '☀️', color: '#d97706', cost: 45, reward: 28, healthGain: 8, lesson: 'La energía solar comunitaria reduce facturas eléctricas y evita emisiones de carbono (ODS 7).' },
+            { id: 4, type: 'crisis', zone: 'water', name: 'Sequía Estacional', icon: '⚠️', color: '#e11d48', penalty: 20, lesson: 'Las sequías se agravan con el calentamiento global, pero el ahorro y filtrado de agua mitigan su impacto.' },
+            { id: 5, type: 'train', name: 'Eco-Tren Norte', icon: '🚄', color: '#06b6d4', targetTile: 17, desc: 'Transporte público eléctrico de cero emisiones. ¡Avanza directo hasta la estación Sur (casilla 17)!' },
+            { id: 6, type: 'project', category: 'social', ods: 'ODS 4', name: 'Escuela Abierta STEM', icon: '🎓', color: '#e11d48', cost: 40, reward: 25, healthGain: 7, lesson: 'La educación inclusiva y de calidad brinda herramientas para innovar frente a los retos del siglo XXI (ODS 4).' },
+            { id: 7, type: 'event', name: 'Dilema Vecinal', icon: '🃏', color: '#8b5cf6' },
+            { id: 8, type: 'project', category: 'circular', ods: 'ODS 12', name: 'Taller Reparación 3R', icon: '♻️', color: '#7c3aed', cost: 45, reward: 28, healthGain: 8, lesson: 'Reparar y reutilizar objetos alarga su vida útil y evita toneladas de residuos electrónicos y plásticos (ODS 12).' },
+            { id: 9, type: 'crisis', zone: 'energy', name: 'Ola de Calor Urbana', icon: '🔥', color: '#e11d48', penalty: 20, lesson: 'Las ciudades sin árboles ni energía limpia sufren islas de calor extremas (ODS 11 y 13).' },
+            { id: 10, type: 'project', category: 'nature', ods: 'ODS 15', name: 'Corredor Bosque Nativo', icon: '🌳', color: '#059669', cost: 50, reward: 30, healthGain: 9, lesson: 'Reforestar con especies autóctonas captura CO₂, frena la erosión y devuelve el hogar a la fauna (ODS 15).' },
+            { id: 11, type: 'event', name: 'Carta de Innovación', icon: '🃏', color: '#8b5cf6' },
+            { id: 12, type: 'alliance', name: 'Foro Mundial ODS 17', icon: '🤝', color: '#2563eb', desc: '¡Cumbre de Alianzas! Todos los jugadores cooperan: tú ganas +25 Eco-Puntos y cada rival recibe +10.' },
+            { id: 13, type: 'project', category: 'nature', ods: 'ODS 14', name: 'Santuario Coralino', icon: '🐠', color: '#0891b2', cost: 50, reward: 30, healthGain: 9, lesson: 'Los océanos producen más del 50% del oxígeno del planeta. Proteger los arrecifes salva la vida marina (ODS 14).' },
+            { id: 14, type: 'event', name: 'Dilema Energético', icon: '🃏', color: '#8b5cf6' },
+            { id: 15, type: 'project', category: 'social', ods: 'ODS 5 y 10', name: 'Centro Igualdad y Empleo', icon: '⚖️', color: '#db2777', cost: 45, reward: 28, healthGain: 8, lesson: 'La igualdad de oportunidades y el trabajo digno multiplican la prosperidad justa de toda sociedad (ODS 5, 8 y 10).' },
+            { id: 16, type: 'crisis', zone: 'nature', name: 'Marea de Microplásticos', icon: '🛢️', color: '#e11d48', penalty: 20, lesson: 'Cada año millones de toneladas de plástico acaban en el mar. Proteger costas y bosques frena este daño.' },
+            { id: 17, type: 'train', name: 'Eco-Tren Sur', icon: '🚄', color: '#06b6d4', targetTile: 5, desc: 'Conexión ferroviaria limpia. ¡Viaja sin emisiones hasta la estación Norte (casilla 5)!' },
+            { id: 18, type: 'project', category: 'circular', ods: 'ODS 11', name: 'Barrio Verde y Carril Bici', icon: '🚲', color: '#4f46e5', cost: 50, reward: 30, healthGain: 9, lesson: 'Ciudades diseñadas para caminar, pedalear y disfrutar de parques mejoran la salud física y mental (ODS 11).' },
+            { id: 19, type: 'event', name: 'Carta Ciudadana', icon: '🃏', color: '#8b5cf6' },
+            { id: 20, type: 'project', category: 'energy', ods: 'ODS 13', name: 'Parque Eólico Marino', icon: '🌬️', color: '#0d9488', cost: 55, reward: 35, healthGain: 10, lesson: 'El viento marino genera electricidad limpia constante a gran escala para descarbonizar la economía (ODS 13).' },
+            { id: 21, type: 'crisis', zone: 'circular', name: 'Vertedero Saturado', icon: '🗑️', color: '#e11d48', penalty: 20, lesson: 'Sin economía circular ni consumo responsable, los residuos contaminan suelos y acuíferos.' },
+            { id: 22, type: 'project', category: 'water', ods: 'ODS 2 y 6', name: 'Huerto Agroecológico', icon: '🌾', color: '#65a30d', cost: 45, reward: 28, healthGain: 8, lesson: 'La agricultura sostenible produce alimentos sanos cuidando la fertilidad del suelo y cada gota de agua (ODS 2).' },
+            { id: 23, type: 'event', name: 'Gran Asamblea Verde', icon: '🃏', color: '#8b5cf6' }
+        ];
+
+        const EVENT_CARDS = [
+            {
+                npc: '👩‍🌾 Doña Carmen (Agricultora Local)',
+                title: 'Cosecha y Riego Inteligente (ODS 2 y 6)',
+                story: 'Las lluvias se han retrasado este mes. Doña Carmen te pide consejo para salvar los cultivos del valle sin agotar el acuífero.',
+                options: [
+                    { label: 'Financiar sensores de humedad y riego por goteo (-15 Eco-Puntos)', cost: 15, ecoDelta: 30, healthDelta: 6, moveSteps: 2, result: '¡Cosecha salvada con un 60% menos de agua! Ganas +30 Eco-Puntos, +6% Salud del Planeta y avanzas 2 casillas.' },
+                    { label: 'Organizar una jornada voluntaria de acolchado orgánico (Gratis)', cost: 0, ecoDelta: 15, healthDelta: 3, moveSteps: 0, result: 'La tierra conserva mejor la humedad. Ganas +15 Eco-Puntos y +3% Salud del Planeta.' }
+                ],
+                lesson: 'La agricultura sostenible (ODS 2) combina tecnología eficiente y saberes ecológicos para alimentar a la población sin agotar el agua.'
+            },
+            {
+                npc: '🧑‍💻 Javier (Joven Emprendedor)',
+                title: 'App de Alimentos Sin Desperdicio (ODS 12)',
+                story: 'Javier ha creado una aplicación para que panaderías y mercados donen comida fresca antes del cierre, pero necesita difusión.',
+                options: [
+                    { label: 'Lanzar campaña comunitaria en toda la isla (-10 Eco-Puntos)', cost: 10, ecoDelta: 28, healthDelta: 5, moveSteps: 1, result: '¡Se evitan 2 toneladas de desperdicio alimentario! Ganas +28 Eco-Puntos y avanzas 1 casilla.' },
+                    { label: 'Probarla primero en tu propio barrio (Gratis)', cost: 0, ecoDelta: 15, healthDelta: 3, moveSteps: 0, result: 'Buen comienzo local: ganas +15 Eco-Puntos y +3% Salud del Planeta.' }
+                ],
+                lesson: 'Un tercio de los alimentos producidos en el mundo se pierde o desperdicia. Reducirlo ahorra agua, tierra y emisiones (ODS 12).'
+            },
+            {
+                npc: '👧 Sofía (Delegada Estudiantil)',
+                title: 'Brigada Escolar Bicibús (ODS 3, 11 y 13)',
+                story: 'Sofía propone crear rutas seguras en bicicleta para ir al instituto y reducir los atascos de coches cada mañana.',
+                options: [
+                    { label: 'Instalar aparcabicis solares y chalecos reflectantes (-15 Eco-Puntos)', cost: 15, ecoDelta: 32, healthDelta: 6, moveSteps: 2, result: '¡El aire junto al instituto está limpísimo! Ganas +32 Eco-Puntos, +6% Salud y avanzas 2 casillas.' },
+                    { label: 'Acompañar la primera ruta ciclista este viernes (Gratis)', cost: 0, ecoDelta: 18, healthDelta: 3, moveSteps: 0, result: '¡Gran participación juvenil! Ganas +18 Eco-Puntos y +3% Salud del Planeta.' }
+                ],
+                lesson: 'La movilidad activa limpia mejora la salud cardiovascular (ODS 3) y descongestiona nuestras ciudades (ODS 11).'
+            },
+            {
+                npc: '🧜‍♀️ Dra. Coral (Oceanógrafa)',
+                title: 'Redes Fantasma en el Arrecife (ODS 14)',
+                story: 'Un temporal ha arrastrado redes de pesca abandonadas cerca de la costa, atrapando tortugas y peces.',
+                options: [
+                    { label: 'Fletar barco eléctrico de rescate y reciclaje de redes (-15 Eco-Puntos)', cost: 15, ecoDelta: 35, healthDelta: 7, moveSteps: 1, result: '¡Arrecife liberado y redes convertidas en hilo reciclado! Ganas +35 Eco-Puntos y +7% Salud.' },
+                    { label: 'Limpiar la orilla con voluntarios locales (Gratis)', cost: 0, ecoDelta: 16, healthDelta: 3, moveSteps: 0, result: 'Retiras cientos de plásticos de la playa. Ganas +16 Eco-Puntos y +3% Salud.' }
+                ],
+                lesson: 'Los plásticos y redes abandonadas amenazan la biodiversidad marina; la economía azul los transforma en nuevos recursos (ODS 14).'
+            },
+            {
+                npc: '👷‍♀️ Elena (Cooperativa Energética)',
+                title: 'Apagón en el Centro de Salud (ODS 7)',
+                story: 'Una tormenta ha dañado el tendido eléctrico tradicional del ambulatorio. ¡Necesitan respaldo limpio inmediato!',
+                options: [
+                    { label: 'Conectar baterías solares comunitarias (-10 Eco-Puntos)', cost: 10, ecoDelta: 30, healthDelta: 5, moveSteps: 2, result: '¡El centro de salud sigue operando al 100% con energía limpia! Ganas +30 Eco-Puntos y avanzas 2 casillas.' },
+                    { label: 'Coordinar ahorro energético en el barrio (Gratis)', cost: 0, ecoDelta: 15, healthDelta: 3, moveSteps: 0, result: 'La solidaridad vecinal estabiliza la red. Ganas +15 Eco-Puntos y +3% Salud.' }
+                ],
+                lesson: 'Las microrredes renovables con almacenamiento hacen que servicios esenciales como hospitales sean resilientes ante emergencias (ODS 7).'
+            }
+        ];
+
+        // =========================================================================
+        // 4. ESTADO GLOBAL DE LA PARTIDA
+        // =========================================================================
+        const game = {
+            players: [],
+            currentPlayerIdx: 0,
+            round: 1,
+            planetHealth: 20,
+            phase: 'idle', // 'idle' | 'rolling' | 'moving' | 'modal' | 'gameover'
+            diceValue: 6,
+            owners: {}, // tileId -> playerId
+            unlockedLessons: [],
+            animTime: 0
+        };
+
+        const canvas = document.getElementById('board-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeBoardCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+        }
+        window.addEventListener('resize', resizeBoardCanvas);
+
+        function startBoardGame() {
+            Sound.init();
+            Sound.fanfare();
+            const activeChars = CHARACTER_TEMPLATES.filter(c => c.mode !== 'off');
+            game.players = activeChars.map((c, idx) => ({
+                ...c,
+                index: idx,
+                tile: 0,
+                visualTile: 0,
+                points: 75,
+                projectsBuilt: 0,
+                alliancesCount: 0,
+                leoShieldUsed: false
+            }));
+
+            document.getElementById('setup-screen').classList.add('hidden');
+            resizeBoardCanvas();
+            renderDiceDots(6);
+            updateUI();
+            addLog(`🌍 ¡Comienza la partida! Turno de ${game.players[0].name} (${game.players[0].role}).`);
+            checkBotTurn();
+        }
+
+        // =========================================================================
+        // 5. RENDERIZADO DEL TABLERO DE MESA EN CANVAS (24 CASILLAS + PLANETA)
+        // =========================================================================
+        // Calcula coordenadas (x, y) en el perímetro cuadrado redondeado de 24 casillas
+        function getTileCoords(tileIdx, w, h) {
+            const padX = Math.max(38, w * 0.085);
+            const padY = Math.max(38, h * 0.085);
+            const innerW = w - padX * 2;
+            const innerH = h - padY * 2;
+
+            // 24 casillas divididas en 4 lados de 6 pasos (0..6 arriba, 6..12 derecha, 12..18 abajo, 18..24 izquierda)
+            const t = ((tileIdx % 24) + 24) % 24;
+            if (t <= 6) {
+                return { x: padX + (t / 6) * innerW, y: padY };
+            } else if (t <= 12) {
+                return { x: padX + innerW, y: padY + ((t - 6) / 6) * innerH };
+            } else if (t <= 18) {
+                return { x: padX + innerW - ((t - 12) / 6) * innerW, y: padY + innerH };
+            } else {
+                return { x: padX, y: padY + innerH - ((t - 18) / 6) * innerH };
+            }
+        }
+
+        function drawBoard(dt) {
+            const w = canvas.width / window.devicePixelRatio;
+            const h = canvas.height / window.devicePixelRatio;
+            if (w === 0 || h === 0) return;
+
+            game.animTime += dt;
+
+            // Fondo de mesa de madera/pizarra ecológica
+            ctx.fillStyle = '#0b172a';
+            ctx.fillRect(0, 0, w, h);
+
+            // Centro: Isla / Planeta vivo cuya vegetación crece con game.planetHealth
+            const cx = w * 0.5;
+            const cy = h * 0.5;
+            const planetR = Math.min(w, h) * 0.25;
+
+            // Halo atmosférico
+            const haloGrad = ctx.createRadialGradient(cx, cy, planetR * 0.7, cx, cy, planetR * 1.35);
+            haloGrad.addColorStop(0, game.planetHealth >= 60 ? 'rgba(52, 211, 153, 0.28)' : 'rgba(56, 189, 248, 0.16)');
+            haloGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+            ctx.fillStyle = haloGrad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, planetR * 1.35, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Esfera del océano
+            ctx.beginPath();
+            ctx.arc(cx, cy, planetR, 0, Math.PI * 2);
+            ctx.fillStyle = game.planetHealth >= 50 ? '#0284c7' : '#1e3a5f';
+            ctx.fill();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.stroke();
+
+            // Continentes verdes que se expanden según Salud del Planeta
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, planetR - 2, 0, Math.PI * 2);
+            ctx.clip();
+
+            const greenColor = game.planetHealth >= 70 ? '#22c55e' : (game.planetHealth >= 40 ? '#65a30d' : '#78716c');
+            const landScale = 0.55 + (game.planetHealth / 100) * 0.55;
+
+            ctx.fillStyle = greenColor;
+            ctx.beginPath();
+            ctx.ellipse(cx - planetR * 0.28, cy - planetR * 0.15, planetR * 0.45 * landScale, planetR * 0.35 * landScale, 0.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.ellipse(cx + planetR * 0.32, cy + planetR * 0.22, planetR * 0.42 * landScale, planetR * 0.32 * landScale, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pequeños árboles y aerogeneradores en el planeta central conforme sube la salud
+            if (game.planetHealth >= 35) {
+                ctx.font = `${Math.round(planetR * 0.24)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.fillText('🌲', cx - planetR * 0.3, cy - planetR * 0.1);
+            }
+            if (game.planetHealth >= 55) {
+                ctx.fillText('🌻', cx + planetR * 0.3, cy + planetR * 0.25);
+            }
+            if (game.planetHealth >= 75) {
+                ctx.fillText('🦋', cx + planetR * 0.15, cy - planetR * 0.32);
+                ctx.fillText('🐋', cx - planetR * 0.22, cy + planetR * 0.38);
+            }
+            ctx.restore();
+
+            // Texto central del planeta
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.82)';
+            ctx.beginPath();
+            ctx.roundRect(cx - 66, cy - 22, 132, 44, 14);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.fillStyle = '#a7f3d0';
+            ctx.font = 'bold 10px "Plus Jakarta Sans", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('SALUD PLANETA', cx, cy - 5);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 16px "Fredoka", sans-serif';
+            ctx.fillText(`${game.planetHealth}%`, cx, cy + 13);
+
+            // Líneas de conexión entre casillas
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            for (let i = 0; i <= 24; i++) {
+                const pt = getTileCoords(i, w, h);
+                if (i === 0) ctx.moveTo(pt.x, pt.y);
+                else ctx.lineTo(pt.x, pt.y);
+            }
+            ctx.stroke();
+
+            // Línea punteada del Eco-Tren (casilla 5 <-> casilla 17)
+            const t5 = getTileCoords(5, w, h);
+            const t17 = getTileCoords(17, w, h);
+            ctx.save();
+            ctx.strokeStyle = 'rgba(6, 182, 212, 0.35)';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath();
+            ctx.moveTo(t5.x, t5.y);
+            ctx.lineTo(t17.x, t17.y);
+            ctx.stroke();
+            ctx.restore();
+
+            // Dibujar las 24 casillas
+            const tileSize = Math.max(38, Math.min(w, h) * 0.095);
+            BOARD_TILES.forEach((tile, idx) => {
+                const pos = getTileCoords(idx, w, h);
+                const ownerIdx = game.owners[tile.id];
+                const hasOwner = ownerIdx !== undefined;
+                const owner = hasOwner ? game.players[ownerIdx] : null;
+
+                // Sombra de la casilla
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+                ctx.beginPath();
+                ctx.roundRect(pos.x - tileSize / 2, pos.y - tileSize / 2 + 3, tileSize, tileSize, 12);
+                ctx.fill();
+
+                // Cuerpo de la casilla
+                ctx.fillStyle = hasOwner ? owner.color : '#1e293b';
+                ctx.beginPath();
+                ctx.roundRect(pos.x - tileSize / 2, pos.y - tileSize / 2, tileSize, tileSize, 12);
+                ctx.fill();
+
+                // Borde de categoría ODS
+                ctx.lineWidth = hasOwner ? 3 : 2.5;
+                ctx.strokeStyle = hasOwner ? '#ffffff' : tile.color;
+                ctx.stroke();
+
+                // Franja superior de color ODS si no está construida
+                if (!hasOwner) {
+                    ctx.fillStyle = tile.color;
+                    ctx.beginPath();
+                    ctx.roundRect(pos.x - tileSize / 2 + 2, pos.y - tileSize / 2 + 2, tileSize - 4, 8, [9, 9, 0, 0]);
+                    ctx.fill();
+                }
+
+                // Icono de la casilla
+                ctx.font = `${Math.round(tileSize * 0.44)}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(tile.icon, pos.x, pos.y + 2);
+
+                // Insignia de edificio construido si tiene dueño
+                if (hasOwner) {
+                    ctx.font = '13px sans-serif';
+                    ctx.fillText('🏡', pos.x + tileSize * 0.32, pos.y - tileSize * 0.32);
+                }
+            });
+
+            // Dibujar fichas de los jugadores con desplazamiento para que no se tapen
+            const offsets = [
+                [-11, -11], [11, -11], [-11, 11], [11, 11]
+            ];
+            game.players.forEach((p, idx) => {
+                // Interpolación suave hacia su casilla actual
+                const diff = p.tile - p.visualTile;
+                if (Math.abs(diff) > 0.01) {
+                    if (Math.abs(diff) > 12) {
+                        p.visualTile = p.tile;
+                    } else {
+                        p.visualTile += diff * Math.min(1, dt * 14);
+                    }
+                } else {
+                    p.visualTile = p.tile;
+                }
+
+                const pos = getTileCoords(p.visualTile, w, h);
+                const [ox, oy] = offsets[idx % 4];
+                const isTurn = idx === game.currentPlayerIdx;
+                const hop = isTurn ? Math.abs(Math.sin(game.animTime * 6)) * 5 : 0;
+
+                const px = pos.x + ox;
+                const py = pos.y + oy - hop;
+
+                // Aro luminoso si es su turno
+                if (isTurn) {
+                    ctx.beginPath();
+                    ctx.arc(px, py, 16, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+                    ctx.fill();
+                }
+
+                // Ficha circular con el color del personaje
+                ctx.beginPath();
+                ctx.arc(px, py, 12.5, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = '#ffffff';
+                ctx.stroke();
+
+                // Avatar encima de la ficha
+                ctx.font = '15px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(p.avatar, px, py);
+            });
+        }
+
+        let prevTime = performance.now();
+        function loop(now) {
+            const dt = Math.min(0.05, (now - prevTime) / 1000);
+            prevTime = now;
+            drawBoard(dt);
+            requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+
+        // =========================================================================
+        // 6. MECÁNICA DEL DADO ANIMADO Y MOVIMIENTO CASILLA A CASILLA
+        // =========================================================================
+        function renderDiceDots(val) {
+            const dotPatterns = {
+                1: [4],
+                2: [0, 8],
+                3: [0, 4, 8],
+                4: [0, 2, 6, 8],
+                5: [0, 2, 4, 6, 8],
+                6: [0, 2, 3, 5, 6, 8]
+            };
+            const active = dotPatterns[val] || [4];
+            const container = document.getElementById('dice-dots');
+            container.innerHTML = Array.from({ length: 9 }, (_, i) =>
+                active.includes(i)
+                    ? `<span class="w-3 h-3 rounded-full bg-slate-900 block mx-auto my-auto"></span>`
+                    : `<span></span>`
+            ).join('');
+        }
+
+        function handleRollDiceClick() {
+            const player = game.players[game.currentPlayerIdx];
+            if (!player || player.mode !== 'human' || game.phase !== 'idle') return;
+            rollDice();
+        }
+
+        function rollDice() {
+            if (game.phase !== 'idle') return;
+            game.phase = 'rolling';
+            Sound.init();
+
+            const diceBox = document.getElementById('dice-box');
+            const rollBtn = document.getElementById('roll-action-btn');
+            diceBox.classList.add('dice-rolling');
+            rollBtn.disabled = true;
+
+            let ticks = 0;
+            const interval = setInterval(() => {
+                ticks++;
+                const tempFace = Math.floor(Math.random() * 6) + 1;
+                renderDiceDots(tempFace);
+                Sound.diceTick();
+
+                if (ticks >= 10) {
+                    clearInterval(interval);
+                    diceBox.classList.remove('dice-rolling');
+                    const finalRoll = Math.floor(Math.random() * 6) + 1;
+                    game.diceValue = finalRoll;
+                    renderDiceDots(finalRoll);
+                    const p = game.players[game.currentPlayerIdx];
+                    addLog(`🎲 ${p.avatar} ${p.name} saca un <strong>${finalRoll}</strong>.`);
+                    movePlayerSteps(p, finalRoll);
+                }
+            }, 65);
+        }
+
+        function movePlayerSteps(player, steps) {
+            game.phase = 'moving';
+            let remaining = steps;
+
+            const stepTimer = setInterval(() => {
+                remaining--;
+                const prevTile = player.tile;
+                player.tile = (player.tile + 1) % 24;
+                Sound.step();
+
+                // Comprobar si pasa por la Salida (casilla 0)
+                if (prevTile === 23 && player.tile === 0) {
+                    player.points += 30;
+                    Sound.ally();
+                    addLog(`🌍 ${player.name} completa una vuelta al mundo y recibe <strong>+30 Eco-Puntos</strong>.`);
+                    updateUI();
+                }
+
+                if (remaining <= 0) {
+                    clearInterval(stepTimer);
+                    setTimeout(() => resolveTileArrival(player), 280);
+                }
+            }, 240);
+        }
+
+        // =========================================================================
+        // 7. RESOLUCIÓN DE CASILLAS (PROYECTOS, ALIANZAS, EVENTOS, CRISIS)
+        // =========================================================================
+        function resolveTileArrival(player) {
+            const tile = BOARD_TILES[player.tile];
+            game.phase = 'modal';
+
+            // 1. CASILLA DE SALIDA
+            if (tile.type === 'start') {
+                player.points += 15;
+                addLog(`🌍 ${player.name} descansa en Día de la Tierra (+15 Eco-Puntos).`);
+                endTurn();
+                return;
+            }
+
+            // 2. CASILLA DE ECO-TREN (TELETRANSPORTE)
+            if (tile.type === 'train') {
+                Sound.ally();
+                if (player.mode === 'bot') {
+                    addLog(`🚄 ${player.name} toma el ${tile.name} hasta la casilla ${tile.targetTile}.`);
+                    player.tile = tile.targetTile;
+                    updateUI();
+                    setTimeout(() => endTurn(), 600);
+                } else {
+                    showModal(`
+                        <div class="p-6 text-center">
+                            <div class="text-5xl mb-2">🚄⚡</div>
+                            <span class="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-extrabold uppercase">Movilidad Sostenible • ODS 11</span>
+                            <h3 class="font-board text-2xl font-bold text-white mt-2">${tile.name}</h3>
+                            <p class="text-sm text-slate-300 mt-2 mb-5">${tile.desc}</p>
+                            <button onclick="takeEcoTrain(${tile.targetTile})" class="btn-toy w-full py-3.5 rounded-2xl bg-cyan-400 text-slate-950 font-board font-bold text-lg cursor-pointer">
+                                🚀 Viajar en Eco-Tren
+                            </button>
+                        </div>
+                    `);
+                }
+                return;
+            }
+
+            // 3. CASILLA DE FORO DE ALIANZAS (ODS 17)
+            if (tile.type === 'alliance') {
+                Sound.ally();
+                player.points += 25;
+                player.alliancesCount++;
+                game.players.forEach(other => {
+                    if (other.id !== player.id) other.points += 10;
+                });
+                adjustPlanetHealth(5);
+                addLog(`🤝 ${player.name} lidera el Foro ODS 17: +25 pts para ${player.name} y +10 pts para todos.`);
+                if (player.mode === 'bot') {
+                    setTimeout(() => endTurn(), 700);
+                } else {
+                    showModal(`
+                        <div class="p-6 text-center">
+                            <div class="text-5xl mb-2">🤝🌍</div>
+                            <span class="px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-extrabold uppercase">Alianzas para los Objetivos • ODS 17</span>
+                            <h3 class="font-board text-2xl font-bold text-white mt-2">${tile.name}</h3>
+                            <p class="text-sm text-slate-200 mt-2 mb-5">${tile.desc}</p>
+                            <button onclick="closeTileModalAndEndTurn()" class="btn-toy w-full py-3.5 rounded-2xl bg-blue-400 text-slate-950 font-board font-bold text-lg cursor-pointer">
+                                ✨ ¡Continuar!
+                            </button>
+                        </div>
+                    `);
+                }
+                return;
+            }
+
+            // 4. CASILLA DE CRISIS AMBIENTAL
+            if (tile.type === 'crisis') {
+                // Comprobar si hay proyectos construidos en esa misma categoría que protejan el tablero
+                const zoneProjects = BOARD_TILES.filter(t => t.type === 'project' && t.category === tile.zone && game.owners[t.id] !== undefined).length;
+
+                if (zoneProjects > 0) {
+                    Sound.ally();
+                    player.points += 10;
+                    addLog(`🛡️ ¡Los proyectos ODS activos protegieron a ${player.name} de "${tile.name}"! (+10 pts)`);
+                    if (player.mode === 'bot') {
+                        setTimeout(() => endTurn(), 700);
+                    } else {
+                        showModal(`
+                            <div class="p-6 text-center">
+                                <div class="text-5xl mb-2">🛡️🌿</div>
+                                <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-extrabold uppercase">Resiliencia Climática</span>
+                                <h3 class="font-board text-2xl font-bold text-white mt-2">¡Protegido por los Proyectos ODS!</h3>
+                                <p class="text-sm text-slate-200 mt-2 mb-4">Se desató <strong>${tile.name}</strong>, pero los proyectos sostenibles ya construidos en el tablero amortiguaron el impacto. ¡Ganas +10 Eco-Puntos!</p>
+                                <button onclick="closeTileModalAndEndTurn()" class="btn-toy w-full py-3.5 rounded-2xl bg-emerald-400 text-slate-950 font-board font-bold text-lg cursor-pointer">
+                                    👍 ¡Genial!
+                                </button>
+                            </div>
+                        `);
+                    }
+                } else if (player.id === 'leo' && !player.leoShieldUsed) {
+                    player.leoShieldUsed = true;
+                    Sound.ally();
+                    addLog(`🧔‍♂️ Leo activa su habilidad Escudo Natural y evita "${tile.name}".`);
+                    if (player.mode === 'bot') {
+                        setTimeout(() => endTurn(), 700);
+                    } else {
+                        showModal(`
+                            <div class="p-6 text-center">
+                                <div class="text-5xl mb-2">🧔‍♂️🛡️</div>
+                                <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-extrabold uppercase">Habilidad de Leo</span>
+                                <h3 class="font-board text-2xl font-bold text-white mt-2">¡Escudo Natural Activado!</h3>
+                                <p class="text-sm text-slate-200 mt-2 mb-4">Tu conocimiento de los ecosistemas te permite evitar la penalización de <strong>${tile.name}</strong>.</p>
+                                <button onclick="closeTileModalAndEndTurn()" class="btn-toy w-full py-3.5 rounded-2xl bg-emerald-400 text-slate-950 font-board font-bold text-lg cursor-pointer">
+                                    🌿 Continuar
+                                </button>
+                            </div>
+                        `);
+                    }
+                } else {
+                    Sound.crisis();
+                    const loss = Math.min(player.points, tile.penalty);
+                    player.points -= loss;
+                    adjustPlanetHealth(-3);
+                    unlockLesson(tile.name, tile.lesson, '⚠️');
+                    addLog(`⚠️ ${player.name} sufre "${tile.name}" (-${loss} Eco-Puntos). Construir proyectos evitará esto.`);
+                    if (player.mode === 'bot') {
+                        setTimeout(() => endTurn(), 750);
+                    } else {
+                        showModal(`
+                            <div class="p-6 text-center">
+                                <div class="text-5xl mb-2">${tile.icon}</div>
+                                <span class="px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-extrabold uppercase">Alerta Ambiental</span>
+                                <h3 class="font-board text-2xl font-bold text-white mt-2">${tile.name}</h3>
+                                <p class="text-sm text-slate-200 mt-2 mb-3">${tile.lesson}</p>
+                                <div class="bg-rose-950/60 border border-rose-500/40 rounded-xl p-3 text-xs text-rose-200 font-bold mb-5">
+                                    Pierdes ${loss} Eco-Puntos. ¡Consejo: construye proyectos de esta categoría para blindar la isla!
+                                </div>
+                                <button onclick="closeTileModalAndEndTurn()" class="btn-toy w-full py-3.5 rounded-2xl bg-rose-500 text-white font-board font-bold text-lg cursor-pointer">
+                                    Entendido
+                                </button>
+                            </div>
+                        `);
+                    }
+                }
+                return;
+            }
+
+            // 5. CASILLA DE CARTA DE EVENTO / DILEMA NARRATIVO
+            if (tile.type === 'event') {
+                const card = EVENT_CARDS[Math.floor(Math.random() * EVENT_CARDS.length)];
+                unlockLesson(card.title, card.lesson, '🃏');
+
+                if (player.mode === 'bot') {
+                    const opt = player.points >= card.options[0].cost ? card.options[0] : card.options[1];
+                    player.points = Math.max(0, player.points - opt.cost + opt.ecoDelta);
+                    adjustPlanetHealth(opt.healthDelta);
+                    if (opt.moveSteps > 0) player.tile = (player.tile + opt.moveSteps) % 24;
+                    addLog(`🃏 ${player.name} resuelve "${card.title}" (+${opt.ecoDelta} Eco-Puntos).`);
+                    setTimeout(() => endTurn(), 800);
+                } else {
+                    showModal(`
+                        <div class="px-6 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 flex items-center justify-between">
+                            <span class="text-xs font-extrabold uppercase tracking-wider text-violet-100">🃏 Carta de Dilema Sostenible</span>
+                            <span class="text-2xl">✨</span>
+                        </div>
+                        <div class="p-5 sm:p-6">
+                            <p class="text-xs font-bold text-amber-300 mb-1">${card.npc}</p>
+                            <h3 class="font-board text-xl sm:text-2xl font-bold text-white mb-2">${card.title}</h3>
+                            <p class="text-sm text-slate-200 bg-slate-900/80 p-3.5 rounded-2xl border border-slate-700 mb-4 leading-relaxed">${card.story}</p>
+                            <div class="space-y-2.5">
+                                ${card.options.map((opt, idx) => {
+                                    const canAfford = player.points >= opt.cost;
+                                    return `
+                                        <button ${canAfford ? '' : 'disabled'} onclick='resolveEventChoice(${JSON.stringify(card).replace(/'/g, "&apos;")}, ${idx})' class="btn-toy w-full text-left p-4 rounded-2xl border ${canAfford ? 'bg-slate-800 hover:bg-slate-700 border-violet-400/50 text-white cursor-pointer' : 'bg-slate-900 border-slate-800 text-slate-500'}">
+                                            <div class="font-bold text-sm">${opt.label}</div>
+                                            <div class="text-[11px] text-emerald-300 mt-1">Recompensa: +${opt.ecoDelta} Eco-Puntos • +${opt.healthDelta}% Salud Planeta</div>
+                                        </button>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `);
+                }
+                return;
+            }
+
+            // 6. CASILLA DE PROYECTO SOSTENIBLE (CONSTRUIR O COOPERAR CON DUEÑO)
+            if (tile.type === 'project') {
+                const ownerIdx = game.owners[tile.id];
+
+                // A) Ya está construido por otro jugador -> ¡Alianza ODS 17!
+                if (ownerIdx !== undefined) {
+                    const owner = game.players[ownerIdx];
+                    Sound.ally();
+                    if (owner.id === player.id) {
+                        const bonus = 15 + getCharacterBonus(player, tile.category);
+                        player.points += bonus;
+                        addLog(`🏡 ${player.name} inspecciona su propio proyecto "${tile.name}" (+${bonus} Eco-Puntos).`);
+                        if (player.mode === 'bot') { setTimeout(() => endTurn(), 650); return; }
+                        showModal(`
+                            <div class="p-6 text-center">
+                                <div class="text-5xl mb-2">${tile.icon}🏡</div>
+                                <span class="px-3 py-1 rounded-full text-xs font-extrabold uppercase text-white" style="background-color:${tile.color}">${tile.ods} • Tu Proyecto</span>
+                                <h3 class="font-board text-2xl font-bold text-white mt-2">${tile.name}</h3>
+                                <p class="text-sm text-slate-200 mt-2 mb-4">Tu proyecto sigue generando impacto positivo en la isla. Recibes <strong>+${bonus} Eco-Puntos</strong>.</p>
+                                <button onclick="closeTileModalAndEndTurn()" class="btn-toy w-full py-3.5 rounded-2xl bg-emerald-400 text-slate-950 font-board font-bold text-lg cursor-pointer">
+                                    ✨ ¡Continuar!
+                                </button>
+                            </div>
+                        `);
+                    } else {
+                        const visitorGain = 15 + (player.id === 'nora' ? 15 : 0);
+                        const ownerGain = 15;
+                        player.points += visitorGain;
+                        owner.points += ownerGain;
+                        player.alliancesCount++;
+                        owner.alliancesCount++;
+                        unlockLesson(`${tile.ods}: ${tile.name}`, tile.lesson, tile.icon);
+                        addLog(`🤝 ¡Alianza ODS 17! ${player.name} visita "${tile.name}" de ${owner.name}: ambos ganan puntos.`);
+
+                        if (player.mode === 'bot') { setTimeout(() => endTurn(), 700); return; }
+                        showModal(`
+                            <div class="p-6 text-center">
+                                <div class="text-5xl mb-2">🤝${tile.icon}</div>
+                                <span class="px-3 py-1 rounded-full bg-sky-500/20 text-sky-300 text-xs font-extrabold uppercase">Cooperación • ODS 17</span>
+                                <h3 class="font-board text-2xl font-bold text-white mt-2">¡Aprendes de ${owner.name}!</h3>
+                                <p class="text-sm text-slate-200 mt-2 mb-3">${tile.lesson}</p>
+                                <div class="bg-sky-950/60 border border-sky-400/40 rounded-2xl p-3 text-xs text-sky-200 font-bold mb-5">
+                                    Tú ganas +${visitorGain} Eco-Puntos y ${owner.name} recibe +${ownerGain} Eco-Puntos por compartir su proyecto.
+                                </div>
+                                <button onclick="closeTileModalAndEndTurn()" class="btn-toy w-full py-3.5 rounded-2xl bg-sky-400 text-slate-950 font-board font-bold text-lg cursor-pointer">
+                                    🙌 ¡Gran Alianza!
+                                </button>
+                            </div>
+                        `);
+                    }
+                    return;
+                }
+
+                // B) Casilla libre -> Opción de construir el proyecto ODS
+                const finalCost = player.id === 'tarek' ? Math.round(tile.cost * 0.6) : tile.cost;
+                const charBonus = getCharacterBonus(player, tile.category);
+                const canBuild = player.points >= finalCost;
+
+                if (player.mode === 'bot') {
+                    if (canBuild) {
+                        executeBuildProject(player, tile, finalCost, charBonus);
+                    } else {
+                        player.points += 10;
+                        addLog(`💡 ${player.name} investiga en "${tile.name}" y ahorra +10 Eco-Puntos.`);
+                    }
+                    setTimeout(() => endTurn(), 750);
+                } else {
+                    showModal(`
+                        <div class="px-6 py-4 flex items-center justify-between" style="background-color:${tile.color}">
+                            <span class="text-xs font-extrabold uppercase tracking-wider text-white bg-black/25 px-3 py-1 rounded-full">${tile.ods} • Proyecto Disponible</span>
+                            <span class="text-3xl">${tile.icon}</span>
+                        </div>
+                        <div class="p-5 sm:p-6">
+                            <h3 class="font-board text-2xl font-bold text-white mb-1">${tile.name}</h3>
+                            <p class="text-sm text-slate-200 mb-4 leading-relaxed">${tile.lesson}</p>
+
+                            <div class="grid grid-cols-2 gap-3 mb-5 text-xs">
+                                <div class="bg-slate-900 p-3 rounded-2xl border border-slate-700">
+                                    <span class="text-slate-400 block">Inversión necesaria</span>
+                                    <strong class="text-lg text-amber-300 font-board">${finalCost} Eco-Puntos</strong>
+                                    ${player.id === 'tarek' ? '<span class="text-[10px] text-sky-400 block">♻️ Descuento Tarek aplicado</span>' : ''}
+                                </div>
+                                <div class="bg-slate-900 p-3 rounded-2xl border border-slate-700">
+                                    <span class="text-slate-400 block">Impacto inmediato</span>
+                                    <strong class="text-lg text-emerald-400 font-board">+${tile.healthGain}% Salud Planeta</strong>
+                                    <span class="text-[10px] text-emerald-300 block">+${tile.reward + charBonus} Eco-Puntos al construir</span>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row gap-2.5">
+                                <button ${canBuild ? '' : 'disabled'} onclick="confirmPlayerBuild(${tile.id}, ${finalCost}, ${charBonus})" class="btn-toy flex-1 py-3.5 px-4 rounded-2xl bg-emerald-400 text-slate-950 font-board font-bold text-base cursor-pointer">
+                                    🏗️ Construir Proyecto (${finalCost} pts)
+                                </button>
+                                <button onclick="skipProjectBuild()" class="btn-toy py-3.5 px-4 rounded-2xl bg-slate-800 border border-slate-600 text-slate-200 font-bold text-sm cursor-pointer">
+                                    Ahorrar (+10 pts)
+                                </button>
+                            </div>
+                        </div>
+                    `);
+                }
+            }
+        }
+
+        function getCharacterBonus(player, category) {
+            if (player.id === 'mara' && category === 'energy') return 15;
+            if (player.id === 'leo' && (category === 'water' || category === 'nature')) return 15;
+            if (player.id === 'nora' && category === 'social') return 15;
+            return 0;
+        }
+
+        function executeBuildProject(player, tile, cost, bonus) {
+            Sound.build();
+            player.points -= cost;
+            player.points += (tile.reward + bonus);
+            player.projectsBuilt++;
+            game.owners[tile.id] = player.index;
+            adjustPlanetHealth(tile.healthGain);
+            unlockLesson(`${tile.ods}: ${tile.name}`, tile.lesson, tile.icon);
+            addLog(`🏗️ ${player.avatar} ${player.name} construye <strong>${tile.name}</strong> (+${tile.healthGain}% Salud Planeta).`);
+        }
+
+        function confirmPlayerBuild(tileId, cost, bonus) {
+            const player = game.players[game.currentPlayerIdx];
+            const tile = BOARD_TILES[tileId];
+            executeBuildProject(player, tile, cost, bonus);
+            closeTileModalAndEndTurn();
+        }
+
+        function skipProjectBuild() {
+            const player = game.players[game.currentPlayerIdx];
+            player.points += 10;
+            Sound.step();
+            addLog(`💡 ${player.name} prefiere ahorrar recursos (+10 Eco-Puntos).`);
+            closeTileModalAndEndTurn();
+        }
+
+        function takeEcoTrain(targetTile) {
+            const player = game.players[game.currentPlayerIdx];
+            player.tile = targetTile;
+            addLog(`🚄 ${player.name} viaja sin emisiones hasta la casilla ${targetTile}.`);
+            closeTileModalAndEndTurn();
+        }
+
+        function resolveEventChoice(card, optIdx) {
+            const player = game.players[game.currentPlayerIdx];
+            const opt = card.options[optIdx];
+            Sound.build();
+            player.points = Math.max(0, player.points - opt.cost + opt.ecoDelta);
+            adjustPlanetHealth(opt.healthDelta);
+            if (opt.moveSteps > 0) {
+                player.tile = (player.tile + opt.moveSteps) % 24;
+            }
+            addLog(`🃏 ${player.name}: ${opt.result}`);
+
+            showModal(`
+                <div class="p-6 text-center">
+                    <div class="text-5xl mb-2">🌟</div>
+                    <h3 class="font-board text-2xl font-bold text-emerald-300 mb-2">¡Decisión Aplicada!</h3>
+                    <p class="text-sm text-slate-200 mb-4">${opt.result}</p>
+                    <div class="bg-amber-950/40 border border-amber-400/40 rounded-2xl p-3 text-xs text-amber-200 mb-5">
+                        📘 <strong>Lección ODS:</strong> ${card.lesson}
+                    </div>
+                    <button onclick="closeTileModalAndEndTurn()" class="btn-toy w-full py-3.5 rounded-2xl bg-emerald-400 text-slate-950 font-board font-bold text-lg cursor-pointer">
+                        Continuar Partida
+                    </button>
+                </div>
+            `);
+        }
+
+        // =========================================================================
+        // 8. CONTROL DE TURNOS, SALUD DEL PLANETA Y PODIO FINAL
+        // =========================================================================
+        function adjustPlanetHealth(delta) {
+            game.planetHealth = Math.max(0, Math.min(100, game.planetHealth + delta));
+            updateUI();
+        }
+
+        function unlockLesson(title, text, icon) {
+            if (!game.unlockedLessons.some(l => l.title === title)) {
+                game.unlockedLessons.push({ title, text, icon });
+                document.getElementById('notebook-count').textContent = game.unlockedLessons.length;
+            }
+        }
+
+        function showModal(html) {
+            document.getElementById('tile-modal-card').innerHTML = html;
+            document.getElementById('tile-modal').classList.remove('hidden');
+        }
+
+        function closeTileModalAndEndTurn() {
+            document.getElementById('tile-modal').classList.add('hidden');
+            endTurn();
+        }
+
+        function endTurn() {
+            updateUI();
+
+            // Comprobar victoria si la Salud del Planeta llega al 100%
+            if (game.planetHealth >= 100) {
+                triggerVictoryPodium();
+                return;
+            }
+
+            game.currentPlayerIdx = (game.currentPlayerIdx + 1) % game.players.length;
+            if (game.currentPlayerIdx === 0) {
+                game.round++;
+            }
+            game.phase = 'idle';
+            updateUI();
+            checkBotTurn();
+        }
+
+        function checkBotTurn() {
+            const current = game.players[game.currentPlayerIdx];
+            if (current && current.mode === 'bot' && game.phase === 'idle') {
+                setTimeout(() => {
+                    if (game.phase === 'idle') rollDice();
+                }, 850);
+            }
+        }
+
+        function triggerVictoryPodium() {
+            game.phase = 'gameover';
+            Sound.fanfare();
+
+            // Calcular puntuación total combinando Eco-Puntos, proyectos construidos y alianzas
+            const ranked = [...game.players].map(p => ({
+                ...p,
+                totalScore: p.points + p.projectsBuilt * 20 + p.alliancesCount * 15
+            })).sort((a, b) => b.totalScore - a.totalScore);
+
+            const medals = ['🥇 Campeón Agenda 2030', '🥈 Embajador Sostenible', '🥉 Aliado Verde', '🌱 Guardián Eco'];
+            document.getElementById('podium-list').innerHTML = ranked.map((p, idx) => `
+                <div class="p-4 rounded-2xl border-2 ${idx === 0 ? 'border-amber-400 bg-amber-950/35' : 'border-slate-700 bg-slate-900/80'} flex items-center gap-3">
+                    <span class="text-4xl">${p.avatar}</span>
+                    <div class="flex-1">
+                        <span class="text-[11px] font-extrabold uppercase text-amber-300">${medals[idx] || '🌱 Participante'}</span>
+                        <h4 class="font-board text-lg font-bold text-white">${p.name} <span class="text-xs font-normal text-slate-400">(${p.role})</span></h4>
+                        <p class="text-xs text-slate-300 mt-0.5">
+                            ⭐ <strong>${p.totalScore} pts</strong> • 🏗️ ${p.projectsBuilt} obras • 🤝 ${p.alliancesCount} alianzas
+                        </p>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('podium-modal').classList.remove('hidden');
+        }
+
+        // =========================================================================
+        // 9. ACTUALIZACIÓN DE INTERFAZ Y CUADERNO DE LECCIONES
+        // =========================================================================
+        function updateUI() {
+            document.getElementById('round-indicator').textContent = `Ronda ${game.round} • Objetivo: Salud del Planeta 100%`;
+            document.getElementById('planet-health-text').textContent = `${game.planetHealth}% / 100%`;
+            document.getElementById('planet-health-bar').style.width = `${game.planetHealth}%`;
+
+            // Sidebar de jugadores
+            const sidebar = document.getElementById('players-sidebar');
+            sidebar.innerHTML = game.players.map((p, idx) => {
+                const isTurn = idx === game.currentPlayerIdx;
+                return `
+                    <div class="min-w-[175px] lg:min-w-0 p-3 rounded-2xl border-2 transition-all ${isTurn ? 'bg-slate-800/95 border-amber-400 shadow-lg scale-[1.01]' : 'bg-slate-900/75 border-slate-800 opacity-85'}">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <div class="flex items-center gap-2">
+                                <span class="text-2xl">${p.avatar}</span>
+                                <div>
+                                    <h3 class="font-board text-sm sm:text-base font-bold text-white leading-none">${p.name}</h3>
+                                    <span class="text-[10px] text-slate-400">${p.mode === 'bot' ? '🤖 Bot' : '👤 Jugador'}</span>
+                                </div>
+                            </div>
+                            <span class="px-2 py-0.5 rounded-lg text-xs font-extrabold text-slate-950" style="background-color:${p.color}">
+                                ${p.points} pts
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-300 pt-1.5 border-t border-slate-800">
+                            <span>🏗️ Obras: <strong>${p.projectsBuilt}</strong></span>
+                            <span>🤝 Alianzas: <strong>${p.alliancesCount}</strong></span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Banner de turno y botón del dado
+            const curr = game.players[game.currentPlayerIdx];
+            if (curr) {
+                document.getElementById('turn-avatar').textContent = curr.avatar;
+                document.getElementById('turn-name').textContent = curr.name;
+                document.getElementById('turn-role').textContent = `${curr.role} • ${curr.powerTitle}`;
+
+                const rollBtn = document.getElementById('roll-action-btn');
+                const diceBox = document.getElementById('dice-box');
+                if (curr.mode === 'human' && game.phase === 'idle') {
+                    rollBtn.disabled = false;
+                    diceBox.disabled = false;
+                    rollBtn.textContent = '🎲 Tirar Dado';
+                } else {
+                    rollBtn.disabled = true;
+                    diceBox.disabled = true;
+                    rollBtn.textContent = curr.mode === 'bot' ? `🤖 Turno de ${curr.name}...` : '⏳ Resolviendo...';
+                }
+            }
+        }
+
+        function addLog(htmlMsg) {
+            const log = document.getElementById('game-log');
+            const entry = document.createElement('div');
+            entry.className = 'p-2 rounded-xl bg-slate-900/90 border border-white/5 text-slate-200 leading-snug';
+            entry.innerHTML = htmlMsg;
+            log.prepend(entry);
+        }
+
+        function openNotebook() {
+            Sound.step();
+            const body = document.getElementById('notebook-body');
+            if (game.unlockedLessons.length === 0) {
+                body.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <div class="text-4xl mb-2">🎲</div>
+                        <p class="font-bold text-white">Aún no has desbloqueado tarjetas ODS</p>
+                        <p class="text-xs mt-1">Construye proyectos en el tablero o resuelve cartas de dilema para coleccionar lecciones.</p>
+                    </div>
+                `;
+            } else {
+                body.innerHTML = game.unlockedLessons.map(l => `
+                    <div class="p-4 rounded-2xl bg-slate-900/90 border border-white/10 flex items-start gap-3">
+                        <span class="text-3xl">${l.icon}</span>
+                        <div>
+                            <h4 class="font-board text-base font-bold text-amber-300">${l.title}</h4>
+                            <p class="text-xs sm:text-sm text-slate-200 mt-1 leading-relaxed">${l.text}</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            document.getElementById('notebook-modal').classList.remove('hidden');
+        }
+
+        function closeNotebook() {
+            Sound.step();
+            document.getElementById('notebook-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
